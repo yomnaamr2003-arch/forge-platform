@@ -1,7 +1,7 @@
 // ============================================================
 // Forge — API client + shared auth/session helpers
 // ============================================================
-const API_BASE = "http://127.0.0.1:8000/api";
+const API_URL = "https://forge-platform-production.up.railway.app";
 
 const Session = {
   getToken(){ return localStorage.getItem("forge_token"); },
