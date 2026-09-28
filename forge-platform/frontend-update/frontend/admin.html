@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Forge</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="blueprint-bg"></div>
+<nav class="nav">
+  <a href="index.html" class="nav-brand">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12h4l2-6 4 12 2-6h4" stroke="#FF7A2E" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></svg></span>
+    FORGE <span style="color:var(--text-faint);font-weight:400;font-size:.7rem;margin-left:4px;">/ ADMIN</span>
+  </a>
+  <ul class="nav-links"><li><a href="index.html">View site</a></li></ul>
+  <div class="nav-actions" id="nav-actions"></div>
+</nav>
+
+<div class="dash-shell">
+  <aside class="dash-side">
+    <div class="user-chip">
+      <div class="dash-avatar" id="avatar">--</div>
+      <div>
+        <div style="font-size:.85rem;" id="user-name">—</div>
+        <div style="font-size:.72rem;color:var(--text-faint);">Administrator</div>
+      </div>
+    </div>
+    <nav>
+      <a href="#overview" class="tab-link active" data-panel="overview">Overview</a>
+      <a href="#programs" class="tab-link" data-panel="programs">Programs</a>
+      <a href="#services" class="tab-link" data-panel="services">Services</a>
+      <a href="#requests" class="tab-link" data-panel="requests">Requests</a>
+      <a href="#users" class="tab-link" data-panel="users">Users</a>
+    </nav>
+  </aside>
+
+  <main class="dash-main">
+    <section class="dash-panel active" id="panel-overview">
+      <span class="section-tag">§ ANALYTICS</span>
+      <h2>Platform overview</h2>
+      <div class="stat-grid" id="admin-stats">
+        <div class="card stat-card"><b>—</b><span>Loading…</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="card">
+          <h3>Enrollments by category</h3>
+          <div id="cat-breakdown"></div>
+        </div>
+        <div class="card">
+          <h3>Requests by status</h3>
+          <div id="status-breakdown"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="dash-panel" id="panel-programs">
+      <div class="section-head">
+        <div><span class="section-tag">§ CATALOG</span><h2>Programs</h2></div>
+        <button class="btn btn-primary btn-sm" onclick="openProgramModal()">+ New program</button>
+      </div>
+      <div id="admin-programs"><p>Loading…</p></div>
+    </section>
+
+    <section class="dash-panel" id="panel-services">
+      <div class="section-head">
+        <div><span class="section-tag">§ SERVICES</span><h2>Services</h2></div>
+        <button class="btn btn-primary btn-sm" onclick="openServiceModal()">+ New service</button>
+      </div>
+      <div id="admin-services"><p>Loading…</p></div>
+    </section>
+
+    <section class="dash-panel" id="panel-requests">
+      <span class="section-tag">§ QUEUE</span>
+      <h2>Service requests</h2>
+      <div id="admin-requests"><p>Loading…</p></div>
+    </section>
+
+    <section class="dash-panel" id="panel-users">
+      <span class="section-tag">§ DIRECTORY</span>
+      <h2>Users</h2>
+      <div id="admin-users"><p>Loading…</p></div>
+    </section>
+  </main>
+</div>
+
+<!-- Program modal -->
+<div class="modal-backdrop" id="program-modal">
+  <div class="modal">
+    <h3 id="program-modal-title">New program</h3>
+    <div class="error-msg" id="program-err"></div>
+    <form id="program-form">
+      <input type="hidden" id="p-id">
+      <div class="field"><label>Title</label><input type="text" id="p-title" required></div>
+      <div class="field"><label>Category</label><input type="text" id="p-category" required></div>
+      <div class="field"><label>Level</label>
+        <select id="p-level"><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select>
+      </div>
+      <div class="field"><label>Duration (weeks)</label><input type="number" id="p-duration" min="1" value="4" required></div>
+      <div class="field"><label>Description</label><textarea id="p-description" required></textarea></div>
+      <div class="field"><label>Modules (one per line)</label><textarea id="p-modules" placeholder="Intro to X&#10;Building Y&#10;Capstone"></textarea></div>
+      <div class="field"><label>Tools (comma separated)</label><input type="text" id="p-tools" placeholder="Python, FastAPI, SQLite"></div>
+      <div class="modal-close-row">
+        <button type="button" class="btn" onclick="closeProgramModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save program</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Service modal -->
+<div class="modal-backdrop" id="service-modal">
+  <div class="modal">
+    <h3 id="service-modal-title">New service</h3>
+    <div class="error-msg" id="service-err"></div>
+    <form id="service-form">
+      <input type="hidden" id="s-id">
+      <div class="field"><label>Name</label><input type="text" id="s-name" required></div>
+      <div class="field"><label>Category</label><input type="text" id="s-category" required></div>
+      <div class="field"><label>Description</label><textarea id="s-description" required></textarea></div>
+      <div class="modal-close-row">
+        <button type="button" class="btn" onclick="closeServiceModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save service</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+requireAdmin();
+
+document.querySelectorAll(".tab-link").forEach(link => {
+  link.addEventListener("click", (e) => {
+    e.preventDefault();
+    document.querySelectorAll(".tab-link").forEach(l => l.classList.remove("active"));
+    document.querySelectorAll(".dash-panel").forEach(p => p.classList.remove("active"));
+    link.classList.add("active");
+    document.getElementById("panel-" + link.dataset.panel).classList.add("active");
+  });
+});
+
+function init() {
+  const user = Session.getUser();
+  document.getElementById("user-name").textContent = user.name;
+  document.getElementById("avatar").textContent = initials(user.name);
+  loadStats(); loadPrograms(); loadServices(); loadRequests(); loadUsers();
+}
+
+async function loadStats() {
+  try {
+    const a = await Api.analytics();
+    document.getElementById("admin-stats").innerHTML = `
+      <div class="card stat-card"><b>${a.total_users}</b><span>Users</span></div>
+      <div class="card stat-card"><b>${a.total_programs}</b><span>Programs</span></div>
+      <div class="card stat-card"><b>${a.total_services}</b><span>Services</span></div>
+      <div class="card stat-card"><b>${a.total_enrollments}</b><span>Enrollments</span></div>
+      <div class="card stat-card"><b>${a.active_enrollments}</b><span>Active</span></div>
+      <div class="card stat-card"><b>${a.completed_enrollments}</b><span>Completed</span></div>
+      <div class="card stat-card"><b>${a.pending_requests}</b><span>Pending requests</span></div>
+      <div class="card stat-card"><b>${a.resolved_requests}</b><span>Resolved</span></div>
+    `;
+    const catEl = document.getElementById("cat-breakdown");
+    const cats = Object.entries(a.enrollments_by_category);
+    catEl.innerHTML = cats.length ? cats.map(([k,v]) => `
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:.85rem;">
+        <span>${k}</span><span style="color:var(--teal);">${v}</span>
+      </div>`).join("") : `<p>No enrollments yet.</p>`;
+
+    const statusEl = document.getElementById("status-breakdown");
+    const statuses = Object.entries(a.requests_by_status);
+    statusEl.innerHTML = statuses.length ? statuses.map(([k,v]) => `
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:.85rem;">
+        <span>${k.replace("_"," ")}</span><span style="color:var(--ember);">${v}</span>
+      </div>`).join("") : `<p>No requests yet.</p>`;
+  } catch (e) { showToast(e.message, true); }
+}
+
+// ---------------- Programs ----------------
+async function loadPrograms() {
+  const el = document.getElementById("admin-programs");
+  try {
+    const programs = await Api.listPrograms();
+    if (!programs.length) { el.innerHTML = `<div class="empty-state">No programs yet.</div>`; return; }
+    el.innerHTML = `
+      <table>
+        <thead><tr><th>Title</th><th>Category</th><th>Level</th><th>Modules</th><th></th></tr></thead>
+        <tbody>
+          ${programs.map(p => `
+            <tr>
+              <td>${p.title}</td><td>${p.category}</td><td>${p.level}</td><td>${p.modules.length}</td>
+              <td class="row-actions">
+                <button class="btn btn-sm" onclick='openProgramModal(${JSON.stringify(p)})'>Edit</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteProgram(${p.id})">Delete</button>
+              </td>
+            </tr>`).join("")}
+        </tbody>
+      </table>`;
+  } catch (e) { el.innerHTML = `<div class="empty-state">${e.message}</div>`; }
+}
+
+function openProgramModal(p) {
+  document.getElementById("program-err").classList.remove("show");
+  document.getElementById("program-modal-title").textContent = p ? "Edit program" : "New program";
+  document.getElementById("p-id").value = p ? p.id : "";
+  document.getElementById("p-title").value = p ? p.title : "";
+  document.getElementById("p-category").value = p ? p.category : "";
+  document.getElementById("p-level").value = p ? p.level : "Beginner";
+  document.getElementById("p-duration").value = p ? p.duration_weeks : 4;
+  document.getElementById("p-description").value = p ? p.description : "";
+  document.getElementById("p-modules").value = p ? p.modules.join("\n") : "";
+  document.getElementById("p-tools").value = p ? p.tools.join(", ") : "";
+  document.getElementById("program-modal").classList.add("show");
+}
+function closeProgramModal() { document.getElementById("program-modal").classList.remove("show"); }
+
+document.getElementById("program-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const id = document.getElementById("p-id").value;
+  const data = {
+    title: document.getElementById("p-title").value.trim(),
+    category: document.getElementById("p-category").value.trim(),
+    level: document.getElementById("p-level").value,
+    duration_weeks: parseInt(document.getElementById("p-duration").value),
+    description: document.getElementById("p-description").value.trim(),
+    modules: document.getElementById("p-modules").value.split("\n").map(s => s.trim()).filter(Boolean),
+    tools: document.getElementById("p-tools").value.split(",").map(s => s.trim()).filter(Boolean),
+  };
+  try {
+    if (id) await Api.updateProgram(id, data); else await Api.createProgram(data);
+    closeProgramModal(); showToast("Program saved."); loadPrograms(); loadStats();
+  } catch (err) {
+    const el = document.getElementById("program-err"); el.textContent = err.message; el.classList.add("show");
+  }
+});
+
+async function deleteProgram(id) {
+  if (!confirm("Delete this program? Enrollments in it will also be removed.")) return;
+  try { await Api.deleteProgram(id); showToast("Program deleted."); loadPrograms(); loadStats(); }
+  catch (e) { showToast(e.message, true); }
+}
+
+// ---------------- Services ----------------
+async function loadServices() {
+  const el = document.getElementById("admin-services");
+  try {
+    const services = await Api.listServices();
+    if (!services.length) { el.innerHTML = `<div class="empty-state">No services yet.</div>`; return; }
+    el.innerHTML = `
+      <table>
+        <thead><tr><th>Name</th><th>Category</th><th></th></tr></thead>
+        <tbody>
+          ${services.map(s => `
+            <tr>
+              <td>${s.name}</td><td>${s.category}</td>
+              <td class="row-actions">
+                <button class="btn btn-sm" onclick='openServiceModal(${JSON.stringify(s)})'>Edit</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteService(${s.id})">Delete</button>
+              </td>
+            </tr>`).join("")}
+        </tbody>
+      </table>`;
+  } catch (e) { el.innerHTML = `<div class="empty-state">${e.message}</div>`; }
+}
+
+function openServiceModal(s) {
+  document.getElementById("service-err").classList.remove("show");
+  document.getElementById("service-modal-title").textContent = s ? "Edit service" : "New service";
+  document.getElementById("s-id").value = s ? s.id : "";
+  document.getElementById("s-name").value = s ? s.name : "";
+  document.getElementById("s-category").value = s ? s.category : "";
+  document.getElementById("s-description").value = s ? s.description : "";
+  document.getElementById("service-modal").classList.add("show");
+}
+function closeServiceModal() { document.getElementById("service-modal").classList.remove("show"); }
+
+document.getElementById("service-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const id = document.getElementById("s-id").value;
+  const data = {
+    name: document.getElementById("s-name").value.trim(),
+    category: document.getElementById("s-category").value.trim(),
+    description: document.getElementById("s-description").value.trim(),
+  };
+  try {
+    if (id) await Api.updateService(id, data); else await Api.createService(data);
+    closeServiceModal(); showToast("Service saved."); loadServices(); loadStats();
+  } catch (err) {
+    const el = document.getElementById("service-err"); el.textContent = err.message; el.classList.add("show");
+  }
+});
+
+async function deleteService(id) {
+  if (!confirm("Delete this service?")) return;
+  try { await Api.deleteService(id); showToast("Service deleted."); loadServices(); loadStats(); }
+  catch (e) { showToast(e.message, true); }
+}
+
+// ---------------- Requests ----------------
+async function loadRequests() {
+  const el = document.getElementById("admin-requests");
+  try {
+    const requests = await Api.allRequests();
+    if (!requests.length) { el.innerHTML = `<div class="empty-state">No requests submitted yet.</div>`; return; }
+    el.innerHTML = `
+      <table>
+        <thead><tr><th>User</th><th>Service</th><th>Message</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          ${requests.map(r => `
+            <tr>
+              <td>${r.user_name}</td><td>${r.service_name}</td><td>${r.message || "—"}</td>
+              <td><span class="badge badge-${r.status}">${r.status.replace("_"," ")}</span></td>
+              <td>
+                <select onchange="updateStatus(${r.id}, this.value)" style="background:var(--bg-raised);color:var(--text);border:1px solid var(--line-strong);padding:6px;font-family:var(--font-mono);font-size:.78rem;">
+                  <option ${r.status==='pending'?'selected':''} value="pending">Pending</option>
+                  <option ${r.status==='in_progress'?'selected':''} value="in_progress">In progress</option>
+                  <option ${r.status==='resolved'?'selected':''} value="resolved">Resolved</option>
+                </select>
+              </td>
+            </tr>`).join("")}
+        </tbody>
+      </table>`;
+  } catch (e) { el.innerHTML = `<div class="empty-state">${e.message}</div>`; }
+}
+async function updateStatus(id, status) {
+  try { await Api.updateRequestStatus(id, status); showToast("Status updated."); loadStats(); }
+  catch (e) { showToast(e.message, true); }
+}
+
+// ---------------- Users ----------------
+async function loadUsers() {
+  const el = document.getElementById("admin-users");
+  try {
+    const users = await Api.listUsers();
+    el.innerHTML = `
+      <table>
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th></tr></thead>
+        <tbody>
+          ${users.map(u => `
+            <tr>
+              <td>${u.name}</td><td>${u.email}</td>
+              <td><span class="tag">${u.role}</span></td>
+              <td>${new Date(u.created_at).toLocaleDateString()}</td>
+            </tr>`).join("")}
+        </tbody>
+      </table>`;
+  } catch (e) { el.innerHTML = `<div class="empty-state">${e.message}</div>`; }
+}
+
+init();
+</script>
+</body>
+</html>

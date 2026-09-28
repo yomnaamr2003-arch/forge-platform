@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Program — Forge</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="blueprint-bg"></div>
+<nav class="nav">
+  <a href="index.html" class="nav-brand">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12h4l2-6 4 12 2-6h4" stroke="#FF7A2E" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></svg></span>
+    FORGE
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html#programs">Programs</a></li>
+    <li><a href="index.html#services">Services</a></li>
+  </ul>
+  <div class="nav-actions" id="nav-actions"></div>
+</nav>
+
+<div class="container" style="padding-top:56px;">
+  <div id="content"><p>Loading…</p></div>
+</div>
+
+<footer><div class="container">Forge Technology Platform</div></footer>
+
+<script src="js/api.js"></script>
+<script>
+const params = new URLSearchParams(location.search);
+const id = params.get("id");
+
+async function render() {
+  const el = document.getElementById("content");
+  try {
+    const p = await Api.getProgram(id);
+    document.title = p.title + " — Forge";
+    let enrollBtn = `<a href="login.html" class="btn btn-primary">Sign in to enroll</a>`;
+    if (Session.isLoggedIn()) {
+      enrollBtn = `<button class="btn btn-primary" id="enroll-btn">Enroll in this program</button>`;
+    }
+    el.innerHTML = `
+      <span class="section-tag">§ ${p.category.toUpperCase()}</span>
+      <h1>${p.title}</h1>
+      <div class="tag-row" style="margin-bottom:20px;">
+        <span class="tag ${levelColorClass(p.level)}">${p.level}</span>
+        <span class="tag ${categoryColorClass(p.category)}">${p.category}</span>
+        <span class="tag">${p.duration_weeks} weeks</span>
+        <span class="tag">${p.modules.length} modules</span>
+      </div>
+      <p style="max-width:70ch;">${p.description}</p>
+      <div class="tag-row" style="margin-bottom:28px;">
+        ${p.tools.map(t => `<span class="tag">${t}</span>`).join("")}
+      </div>
+      ${enrollBtn}
+      <h2 style="margin-top:48px;">Curriculum</h2>
+      <ol style="padding-left:20px; color:var(--text-muted);">
+        ${p.modules.map(m => `<li style="margin-bottom:10px;">${m}</li>`).join("")}
+      </ol>
+    `;
+    const btn = document.getElementById("enroll-btn");
+    if (btn) btn.addEventListener("click", async () => {
+      btn.disabled = true; btn.textContent = "Enrolling…";
+      try {
+        await Api.enroll(parseInt(id));
+        showToast("Enrolled — head to your dashboard to start tracking progress.");
+        btn.textContent = "Enrolled ✓";
+      } catch (e) {
+        showToast(e.message, true);
+        btn.disabled = false; btn.textContent = "Enroll in this program";
+      }
+    });
+  } catch (e) {
+    el.innerHTML = `<div class="empty-state">${e.message}</div>`;
+  }
+}
+render();
+</script>
+</body>
+</html>

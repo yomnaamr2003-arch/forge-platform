@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign in — Forge</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="blueprint-bg"></div>
+<nav class="nav">
+  <a href="index.html" class="nav-brand">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12h4l2-6 4 12 2-6h4" stroke="#FF7A2E" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></svg></span>
+    FORGE
+  </a>
+  <ul class="nav-links"></ul>
+  <div class="nav-actions" id="nav-actions"></div>
+</nav>
+
+<div class="auth-shell">
+  <div class="card auth-card">
+    <span class="section-tag">§ SIGN IN</span>
+    <h2>Welcome back</h2>
+    <div class="error-msg" id="err"></div>
+    <form id="login-form">
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" required autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Sign in</button>
+    </form>
+    <p class="form-foot">No account yet? <a href="register.html">Create one</a></p>
+    <p class="form-foot" style="opacity:.6;">Admin demo: admin@forge.dev / admin123</p>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+redirectIfLoggedIn();
+document.getElementById("login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById("err");
+  errEl.classList.remove("show");
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  try {
+    const data = await Api.login(email, password);
+    Session.setToken(data.access_token);
+    Session.setUser(data.user);
+    window.location.href = data.user.role === "admin" ? "admin.html" : "dashboard.html";
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.add("show");
+  }
+});
+</script>
+</body>
+</html>

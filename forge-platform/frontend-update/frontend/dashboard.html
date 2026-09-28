@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Forge</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="blueprint-bg"></div>
+<nav class="nav">
+  <a href="index.html" class="nav-brand">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12h4l2-6 4 12 2-6h4" stroke="#FF7A2E" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></svg></span>
+    FORGE
+  </a>
+  <ul class="nav-links"><li><a href="index.html#programs">Browse catalog</a></li></ul>
+  <div class="nav-actions" id="nav-actions"></div>
+</nav>
+
+<div class="dash-shell">
+  <aside class="dash-side">
+    <div class="user-chip">
+      <div class="dash-avatar" id="avatar">--</div>
+      <div>
+        <div style="font-size:.85rem;" id="user-name">—</div>
+        <div style="font-size:.72rem;color:var(--text-faint);">Member</div>
+      </div>
+    </div>
+    <nav>
+      <a href="#overview" class="tab-link active" data-panel="overview">Overview</a>
+      <a href="#programs" class="tab-link" data-panel="programs">My Programs</a>
+      <a href="#services" class="tab-link" data-panel="services">Services</a>
+      <a href="#requests" class="tab-link" data-panel="requests">My Requests</a>
+    </nav>
+  </aside>
+
+  <main class="dash-main">
+    <section class="dash-panel active" id="panel-overview">
+      <span class="section-tag">§ OVERVIEW</span>
+      <h2>Your progress</h2>
+      <div class="stat-grid">
+        <div class="card stat-card"><b id="ov-programs">0</b><span>Programs enrolled</span></div>
+        <div class="card stat-card"><b id="ov-completed">0</b><span>Programs completed</span></div>
+        <div class="card stat-card"><b id="ov-avg">0%</b><span>Average progress</span></div>
+        <div class="card stat-card"><b id="ov-requests">0</b><span>Open service requests</span></div>
+      </div>
+      <h3>Continue learning</h3>
+      <div id="ov-continue"><p>Loading…</p></div>
+    </section>
+
+    <section class="dash-panel" id="panel-programs">
+      <span class="section-tag">§ MY PROGRAMS</span>
+      <h2>Enrolled programs</h2>
+      <div id="my-programs"><p>Loading…</p></div>
+    </section>
+
+    <section class="dash-panel" id="panel-services">
+      <span class="section-tag">§ SERVICES</span>
+      <h2>Request a service</h2>
+      <p>Choose a service and describe what you need — an admin will follow up on the status.</p>
+      <div class="service-grid" id="service-request-grid"><p>Loading…</p></div>
+    </section>
+
+    <section class="dash-panel" id="panel-requests">
+      <span class="section-tag">§ HISTORY</span>
+      <h2>My service requests</h2>
+      <div id="my-requests"><p>Loading…</p></div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="request-modal">
+  <div class="modal">
+    <h3 id="request-modal-title">Request service</h3>
+    <div class="error-msg" id="request-err"></div>
+    <form id="request-form">
+      <input type="hidden" id="req-service-id">
+      <div class="field">
+        <label for="req-message">What do you need help with?</label>
+        <textarea id="req-message" placeholder="Describe your request…" required></textarea>
+      </div>
+      <div class="modal-close-row">
+        <button type="button" class="btn" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Submit request</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+requireAuth();
+
+document.querySelectorAll(".tab-link").forEach(link => {
+  link.addEventListener("click", (e) => {
+    e.preventDefault();
+    document.querySelectorAll(".tab-link").forEach(l => l.classList.remove("active"));
+    document.querySelectorAll(".dash-panel").forEach(p => p.classList.remove("active"));
+    link.classList.add("active");
+    document.getElementById("panel-" + link.dataset.panel).classList.add("active");
+    history.replaceState(null, "", "#" + link.dataset.panel);
+  });
+});
+const initialPanel = location.hash.replace("#","");
+if (initialPanel) {
+  const l = document.querySelector(`.tab-link[data-panel="${initialPanel}"]`);
+  if (l) l.click();
+}
+
+function openModal(serviceId, serviceName) {
+  document.getElementById("req-service-id").value = serviceId;
+  document.getElementById("request-modal-title").textContent = "Request: " + serviceName;
+  document.getElementById("req-message").value = "";
+  document.getElementById("request-err").classList.remove("show");
+  document.getElementById("request-modal").classList.add("show");
+}
+function closeModal() { document.getElementById("request-modal").classList.remove("show"); }
+
+document.getElementById("request-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try {
+    const serviceId = parseInt(document.getElementById("req-service-id").value);
+    const message = document.getElementById("req-message").value.trim();
+    await Api.createRequest(serviceId, message);
+    closeModal();
+    showToast("Request submitted.");
+    loadRequests(); loadOverview();
+  } catch (err) {
+    const el = document.getElementById("request-err");
+    el.textContent = err.message; el.classList.add("show");
+  }
+});
+
+async function init() {
+  const user = Session.getUser();
+  document.getElementById("user-name").textContent = user.name;
+  document.getElementById("avatar").textContent = initials(user.name);
+  loadOverview(); loadPrograms(); loadServices(); loadRequests();
+}
+
+async function loadOverview() {
+  try {
+    const [enrollments, requests] = await Promise.all([Api.myEnrollments(), Api.myRequests()]);
+    document.getElementById("ov-programs").textContent = enrollments.length;
+    document.getElementById("ov-completed").textContent = enrollments.filter(e => e.status === "completed").length;
+    const avg = enrollments.length ? Math.round(enrollments.reduce((s,e) => s + e.progress_percent, 0) / enrollments.length) : 0;
+    document.getElementById("ov-avg").textContent = avg + "%";
+    document.getElementById("ov-requests").textContent = requests.filter(r => r.status !== "resolved").length;
+
+    const active = enrollments.filter(e => e.status === "active").slice(0, 3);
+    const el = document.getElementById("ov-continue");
+    el.innerHTML = active.length ? active.map(e => `
+      <div class="card" style="margin-bottom:14px;">
+        <h3>${e.program_title}</h3>
+        <div class="progress-track"><div class="progress-fill" style="width:${e.progress_percent}%"></div></div>
+        <p style="margin-top:10px;font-size:.8rem;">${e.completed_modules.length} / ${e.total_modules} modules complete</p>
+      </div>
+    `).join("") : `<div class="empty-state">No active programs yet — browse the catalog to enroll.</div>`;
+  } catch (e) { showToast(e.message, true); }
+}
+
+async function loadPrograms() {
+  const el = document.getElementById("my-programs");
+  try {
+    const enrollments = await Api.myEnrollments();
+    if (!enrollments.length) { el.innerHTML = `<div class="empty-state">You haven't enrolled in any programs yet. <a href="index.html#programs" style="color:var(--ember);">Browse the catalog</a>.</div>`; return; }
+    const full = await Promise.all(enrollments.map(async e => ({ e, program: await Api.getProgram(e.program_id) })));
+    el.innerHTML = full.map(({e, program}) => `
+      <div class="card" style="margin-bottom:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+          <h3>${program.title}</h3>
+          <span class="badge badge-${e.status}">${e.status}</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" style="width:${e.progress_percent}%"></div></div>
+        <p style="margin-top:10px;font-size:.8rem;">${e.progress_percent}% complete</p>
+        <ul class="module-list">
+          ${program.modules.map((m, i) => `
+            <li class="${e.completed_modules.includes(i) ? 'done' : ''}">
+              <input type="checkbox" ${e.completed_modules.includes(i) ? 'checked' : ''} data-enrollment="${e.id}" data-index="${i}">
+              ${m}
+            </li>`).join("")}
+        </ul>
+      </div>
+    `).join("");
+    el.querySelectorAll('input[type=checkbox]').forEach(cb => {
+      cb.addEventListener('change', async () => {
+        try {
+          await Api.toggleModule(cb.dataset.enrollment, parseInt(cb.dataset.index), cb.checked);
+          loadPrograms(); loadOverview();
+        } catch (err) { showToast(err.message, true); cb.checked = !cb.checked; }
+      });
+    });
+  } catch (e) { el.innerHTML = `<div class="empty-state">${e.message}</div>`; }
+}
+
+async function loadServices() {
+  const el = document.getElementById("service-request-grid");
+  try {
+    const services = await Api.listServices();
+    el.innerHTML = services.map(s => `
+      <div class="card">
+        <span class="tag ${categoryColorClass(s.category)}" style="margin-bottom:12px;display:inline-block;">${s.category}</span>
+        <h3>${s.name}</h3>
+        <p>${s.description}</p>
+        <button class="btn btn-sm" onclick="openModal(${s.id}, '${s.name.replace(/'/g, "\\'")}')">Request</button>
+      </div>
+    `).join("");
+  } catch (e) { el.innerHTML = `<div class="empty-state">${e.message}</div>`; }
+}
+
+async function loadRequests() {
+  const el = document.getElementById("my-requests");
+  try {
+    const requests = await Api.myRequests();
+    if (!requests.length) { el.innerHTML = `<div class="empty-state">No requests submitted yet.</div>`; return; }
+    el.innerHTML = `
+      <table>
+        <thead><tr><th>Service</th><th>Message</th><th>Status</th><th>Submitted</th></tr></thead>
+        <tbody>
+          ${requests.map(r => `
+            <tr>
+              <td>${r.service_name}</td>
+              <td>${r.message || "—"}</td>
+              <td><span class="badge badge-${r.status}">${r.status.replace("_"," ")}</span></td>
+              <td>${new Date(r.created_at).toLocaleDateString()}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  } catch (e) { el.innerHTML = `<div class="empty-state">${e.message}</div>`; }
+}
+
+init();
+</script>
+</body>
+</html>

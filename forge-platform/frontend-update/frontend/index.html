@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forge — Technology Learning &amp; Services Platform</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="blueprint-bg"></div>
+
+<nav class="nav">
+  <a href="index.html" class="nav-brand">
+    <span class="mark">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M4 12h4l2-6 4 12 2-6h4" stroke="#FF7A2E" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></svg>
+    </span>
+    FORGE
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html#programs">Programs</a></li>
+    <li><a href="index.html#services">Services</a></li>
+    <li><a href="index.html#how">How it works</a></li>
+  </ul>
+  <div class="nav-actions" id="nav-actions"></div>
+</nav>
+
+<header class="hero">
+  <div class="container hero-grid">
+    <div>
+      <div class="eyebrow"><span class="dot"></span>INTEGRATED LEARNING &amp; SERVICES</div>
+      <h1>Where builders<br>learn to ship.</h1>
+      <p class="lead">Forge is a technology learning platform: structured programs, hands-on modules, progress tracking, and direct access to mentorship and technical services — in one place.</p>
+      <div class="hero-ctas">
+        <a href="register.html" class="btn btn-primary">Start a program</a>
+        <a href="#programs" class="btn">Browse catalog</a>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat"><b id="stat-programs">—</b><span>Active programs</span></div>
+        <div class="hero-stat"><b id="stat-services">—</b><span>Support services</span></div>
+        <div class="hero-stat"><b>REST API</b><span>Built on an open backend</span></div>
+      </div>
+    </div>
+    <div class="circuit-wrap">
+      <svg viewBox="0 0 420 320" xmlns="http://www.w3.org/2000/svg">
+        <g stroke="rgba(226,236,240,0.18)" stroke-width="1.5" fill="none">
+          <path d="M40 60 H180 V150 H340"/>
+          <path d="M40 160 H120 V240 H340"/>
+          <path d="M40 260 H200 V60 H260"/>
+        </g>
+        <g id="circuit-nodes" font-family="IBM Plex Mono">
+          <circle class="circuit-node n1" cx="40" cy="60" r="5" fill="#FF7A2E"/>
+          <text class="circuit-label" x="52" y="55">Learn</text>
+
+          <circle class="circuit-node n2" cx="40" cy="160" r="5" fill="#8FA1A9"/>
+          <text class="circuit-label" x="52" y="155">Enroll</text>
+
+          <circle class="circuit-node n3" cx="40" cy="260" r="5" fill="#8FA1A9"/>
+          <text class="circuit-label" x="52" y="255">Practice</text>
+
+          <circle class="circuit-node n4" cx="340" cy="150" r="5" fill="#8FA1A9"/>
+          <text class="circuit-label" x="352" y="145">Track</text>
+
+          <circle class="circuit-node n5" cx="340" cy="240" r="5" fill="#8FA1A9"/>
+          <text class="circuit-label" x="352" y="235">Support</text>
+
+          <circle class="circuit-node n6" cx="260" cy="60" r="5" fill="#8FA1A9"/>
+          <text class="circuit-label" x="272" y="55">Ship</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</header>
+
+<section id="programs">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <span class="section-tag">§ CATALOG</span>
+        <h2>Technology programs</h2>
+        <p>Each program is a structured sequence of modules — from fundamentals to a capstone build.</p>
+      </div>
+      <div class="tag-row" id="filter-row">
+        <button class="tag" data-filter="all" style="cursor:pointer;background:var(--ember-soft);color:var(--ember);border-color:var(--ember-soft);">All</button>
+      </div>
+    </div>
+    <div class="program-grid" id="program-grid">
+      <p>Loading programs…</p>
+    </div>
+  </div>
+</section>
+
+<section id="services">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <span class="section-tag">§ SERVICES</span>
+        <h2>Services &amp; support</h2>
+        <p>Mentorship, reviews, and technical help — request any service once you're signed in.</p>
+      </div>
+    </div>
+    <div class="service-grid" id="service-grid">
+      <p>Loading services…</p>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="container">
+    <span class="section-tag">§ PROCESS</span>
+    <h2>How the platform fits together</h2>
+    <div class="program-grid" style="margin-top:32px;">
+      <div class="card"><h3>1. Enroll</h3><p>Pick a program and enroll instantly — your seat and progress are tracked from module one.</p></div>
+      <div class="card"><h3>2. Track</h3><p>Check off modules as you complete them. Your dashboard shows real-time progress per program.</p></div>
+      <div class="card"><h3>3. Request support</h3><p>Book mentorship, code reviews or technical help through the services module whenever you're stuck.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">Forge Technology Platform — built for the Integrated Technology Learning &amp; Services Platform brief.</div>
+</footer>
+
+<script src="js/api.js"></script>
+<script>
+async function loadPrograms(filterCategory) {
+  const grid = document.getElementById("program-grid");
+  try {
+    const programs = await Api.listPrograms(filterCategory && filterCategory !== "all" ? { category: filterCategory } : {});
+    document.getElementById("stat-programs").textContent = programs.length;
+    if (!programs.length) { grid.innerHTML = `<div class="empty-state">No programs yet.</div>`; return; }
+    grid.innerHTML = programs.map(p => `
+      <a href="course.html?id=${p.id}" class="card program-card">
+        <div class="tag-row">
+          <span class="tag ${levelColorClass(p.level)}">${p.level}</span>
+          <span class="tag ${categoryColorClass(p.category)}">${p.category}</span>
+        </div>
+        <h3>${p.title}</h3>
+        <p>${p.description}</p>
+        <div class="tag-row">
+          ${p.tools.slice(0,4).map(t => `<span class="tool-chip">${t}</span>`).join(" · ")}
+        </div>
+        <div class="program-meta">
+          <span>${p.duration_weeks} weeks</span>
+          <span>${p.modules.length} modules</span>
+        </div>
+      </a>
+    `).join("");
+  } catch (e) {
+    grid.innerHTML = `<div class="empty-state">${e.message}</div>`;
+  }
+}
+
+async function loadServices() {
+  const grid = document.getElementById("service-grid");
+  try {
+    const services = await Api.listServices();
+    document.getElementById("stat-services").textContent = services.length;
+    if (!services.length) { grid.innerHTML = `<div class="empty-state">No services yet.</div>`; return; }
+    grid.innerHTML = services.map(s => `
+      <div class="card">
+        <span class="tag ${categoryColorClass(s.category)}" style="margin-bottom:12px;display:inline-block;">${s.category}</span>
+        <h3>${s.name}</h3>
+        <p>${s.description}</p>
+        <a href="${Session.isLoggedIn() ? 'dashboard.html#services' : 'login.html'}" class="btn btn-sm">Request this service</a>
+      </div>
+    `).join("");
+  } catch (e) {
+    grid.innerHTML = `<div class="empty-state">${e.message}</div>`;
+  }
+}
+
+async function buildFilters() {
+  try {
+    const programs = await Api.listPrograms();
+    const cats = [...new Set(programs.map(p => p.category))];
+    const row = document.getElementById("filter-row");
+    cats.forEach(c => {
+      const b = document.createElement("button");
+      b.className = "tag"; b.style.cursor = "pointer"; b.textContent = c; b.dataset.filter = c;
+      row.appendChild(b);
+    });
+    row.addEventListener("click", (e) => {
+      if (e.target.tagName !== "BUTTON") return;
+      [...row.children].forEach(c => { c.style.background=""; c.style.color=""; c.style.borderColor=""; });
+      e.target.style.background = "var(--ember-soft)"; e.target.style.color = "var(--ember)"; e.target.style.borderColor="var(--ember-soft)";
+      loadPrograms(e.target.dataset.filter);
+    });
+  } catch {}
+}
+
+loadPrograms(); loadServices(); buildFilters();
+</script>
+</body>
+</html>
